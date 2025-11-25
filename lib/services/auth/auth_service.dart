@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../models/user_model.dart';
 
 class AuthService {
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
@@ -67,17 +68,17 @@ class AuthService {
     }
   }
 
-  Future<void> signOut() async {
-    try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.disconnect(), // Updated for v7.2.0
-      ]);
-    } catch (e) {
-      print('Sign out error: $e');
-      rethrow;
-    }
+Future<void> signOut() async {
+  try {
+    await Future.wait([
+      _auth.signOut(),
+      _googleSignIn.disconnect().catchError((_) => null), // Handle gracefully
+    ]);
+  } catch (e) {
+    print('Sign out error: $e');
+    rethrow;
   }
+}
 
   Future<void> updateUserRole(String uid, String newRole) async {
     try {
