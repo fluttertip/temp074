@@ -176,8 +176,7 @@ class NepFixApp extends StatelessWidget {
                       // LEFT: message
                       Expanded(
                         child: Center(
-                          child: Text(
-                            "NepFix Mobile Mode\n(Desktop View Disabled)",
+                          child: Text("zoom out to 67% for better view",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,

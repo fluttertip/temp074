@@ -36,7 +36,7 @@ dependencies:
   firebase_core: ^4.1.1
   flutter:
     sdk: flutter
-  flutter_screenutil: ^5.9.3
+  # flutter_screenutil: ^5.9.3
   geocoding: ^4.0.0
   geolocator: ^14.0.2
   google_fonts: ^6.2.1
@@ -46,7 +46,6 @@ dependencies:
   intl: ^0.20.2
   provider: ^6.1.5
   shimmer: ^3.0.0
-  widget_screenshot_plus: ^0.0.7
 
 dev_dependencies:
 

@@ -5,9 +5,7 @@ import 'package:homeservice/models/user_model.dart';
 import 'package:homeservice/providers/customer/customerprofileprovider/customer_profile_provider.dart';
 import 'package:homeservice/screens/shared/widgets/common_completeprofilemessage_overlay.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/widget_previews.dart';
 
-@Preview(name: 'My Sample Text')
 class CustomerServiceDescriptionPage extends StatefulWidget {
   final ServiceModel service;
   final UserModel vendorData;
@@ -411,10 +409,10 @@ class _CustomerServiceDescriptionPageState
 
 Widget _buildBottomButton() {
   final provider = Provider.of<CustomerProfileProvider>(context, listen: false);
-  final currentCustomerId = provider.getCachedUser()?.uid ?? '';
+  final currentCustomerId = provider.uid;
 
   // Check if the customer is trying to book their own service
-  final isOwnService = currentCustomerId == widget.vendorData.id;
+  final isOwnService = currentCustomerId == widget.vendorData.uid;
 
   return Container(
     padding: EdgeInsets.all(AppTheme.spacingLG),
