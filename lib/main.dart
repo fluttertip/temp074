@@ -36,6 +36,65 @@ void main() async {
   runApp(const NepFixApp());
 }
 
+// class NepFixApp extends StatelessWidget {
+//   const NepFixApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MultiProvider(
+//       providers: [
+//         ChangeNotifierProvider(create: (_) => BaseProvider()),
+//         ChangeNotifierProvider(create: (_) => LocationProvider()),
+
+//         //authentication providers
+//         ChangeNotifierProvider(create: (_) => UserProvider()),
+       
+//         //customer providers
+//         ChangeNotifierProvider(create: (_) => BannerImageProvider()),
+//         ChangeNotifierProvider(create: (_) => LocalExpertProvider()),
+//         ChangeNotifierProvider(create: (_) => RecommendedServiceProvider()),
+//         ChangeNotifierProvider(create: (_) => PopularServiceProvider()),
+//         ChangeNotifierProvider(create: (_) => TopServiceProvider()),
+//         ChangeNotifierProvider(create: (_) => StaticSearchBarAnimProvider()),
+//         ChangeNotifierProvider(create: (_) => CustomerAdvanceSearchProvider()),
+//          // CustomerProfileProvider depends on UserProvider
+//       ChangeNotifierProxyProvider<UserProvider, CustomerProfileProvider>(
+//         create: (context) => CustomerProfileProvider(),
+//         update: (context, userProvider, previous) {
+//           // Update the CustomerProfileProvider with the latest UserProvider
+//           final provider = previous ?? CustomerProfileProvider();
+//           provider.updateUserProvider(userProvider);
+//           return provider;
+//         },
+//       ),
+//       ChangeNotifierProvider(create: (_) => CustomerBookingHistoryProvider()),
+//        ChangeNotifierProvider(create: (_) => CustomerBookingProvider()),
+   
+       
+//        //verndor providers
+//         ChangeNotifierProvider(create: (_) => VendorServicesProvider()),
+//         ChangeNotifierProxyProvider<UserProvider, VendorProfileProvider>(
+//           create: (_) => VendorProfileProvider(),
+//           update: (context, userProvider, previousVendorProvider) {
+//             final vendorProvider =
+//                 previousVendorProvider ?? VendorProfileProvider();
+//             vendorProvider.updateUserProvider(userProvider);
+//             return vendorProvider;
+//           },
+//         ),
+//       ],
+//       child: MaterialApp(
+//         debugShowCheckedModeBanner: false,
+//         title: 'NepFix Home Services',
+//         color: Colors.transparent,
+//         initialRoute: AppRoutes.splash,
+//         routes: AppRoutes.routes,
+//       ),
+//     );
+//   }
+// }
+
+
 class NepFixApp extends StatelessWidget {
   const NepFixApp({super.key});
 
@@ -45,11 +104,9 @@ class NepFixApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => BaseProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
-
-        //authentication providers
         ChangeNotifierProvider(create: (_) => UserProvider()),
-       
-        //customer providers
+
+        // customer providers
         ChangeNotifierProvider(create: (_) => BannerImageProvider()),
         ChangeNotifierProvider(create: (_) => LocalExpertProvider()),
         ChangeNotifierProvider(create: (_) => RecommendedServiceProvider()),
@@ -57,21 +114,20 @@ class NepFixApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TopServiceProvider()),
         ChangeNotifierProvider(create: (_) => StaticSearchBarAnimProvider()),
         ChangeNotifierProvider(create: (_) => CustomerAdvanceSearchProvider()),
-         // CustomerProfileProvider depends on UserProvider
-      ChangeNotifierProxyProvider<UserProvider, CustomerProfileProvider>(
-        create: (context) => CustomerProfileProvider(),
-        update: (context, userProvider, previous) {
-          // Update the CustomerProfileProvider with the latest UserProvider
-          final provider = previous ?? CustomerProfileProvider();
-          provider.updateUserProvider(userProvider);
-          return provider;
-        },
-      ),
-      ChangeNotifierProvider(create: (_) => CustomerBookingHistoryProvider()),
-       ChangeNotifierProvider(create: (_) => CustomerBookingProvider()),
-   
-       
-       //verndor providers
+
+        ChangeNotifierProxyProvider<UserProvider, CustomerProfileProvider>(
+          create: (context) => CustomerProfileProvider(),
+          update: (context, userProvider, previous) {
+            final provider = previous ?? CustomerProfileProvider();
+            provider.updateUserProvider(userProvider);
+            return provider;
+          },
+        ),
+
+        ChangeNotifierProvider(create: (_) => CustomerBookingHistoryProvider()),
+        ChangeNotifierProvider(create: (_) => CustomerBookingProvider()),
+
+        // vendor
         ChangeNotifierProvider(create: (_) => VendorServicesProvider()),
         ChangeNotifierProxyProvider<UserProvider, VendorProfileProvider>(
           create: (_) => VendorProfileProvider(),
@@ -83,12 +139,135 @@ class NepFixApp extends StatelessWidget {
           },
         ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'NepFix Home Services',
-        color: Colors.transparent,
-        initialRoute: AppRoutes.splash,
-        routes: AppRoutes.routes,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'NepFix Home Services',
+            initialRoute: AppRoutes.splash,
+            routes: AppRoutes.routes,
+
+            // IMPORTANT → This forces mobile view in Desktop/Web
+            builder: (context, child) {
+              if (isMobile) return child!; // normal mobile rendering
+
+              // DESKTOP / WEB MOCKUP SCREEN
+              return Scaffold(
+                body: Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF0F0F1E),
+                        Color(0xFF1A1A2E),
+                        Color(0xFF16213E),
+                        Color(0xFF0F0F1E),
+                      ],
+                      stops: [0.0, 0.3, 0.7, 1.0],
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // LEFT: message
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            "NepFix Mobile Mode\n(Desktop View Disabled)",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Colors.white.withOpacity(0.7),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // CENTER: phone mockup
+                      Expanded(
+                        flex: 2,
+                        child: Center(
+                          child: _PhoneMockup(child: child!),
+                        ),
+                      ),
+
+                      // RIGHT EMPTY SPACE (optional info)
+                      const Expanded(child: SizedBox()),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+
+class _PhoneMockup extends StatelessWidget {
+  final Widget child;
+  const _PhoneMockup({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    const frameWidth = 440.0;
+    const frameHeight = 920.0;
+
+    return SizedBox(
+      width: frameWidth,
+      height: frameHeight,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(50.0),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF667EEA).withOpacity(0.25),
+              blurRadius: 40.0,
+              offset: const Offset(-10, 10),
+            ),
+            BoxShadow(
+              color: const Color(0xFF764BA2).withOpacity(0.25),
+              blurRadius: 40.0,
+              offset: const Offset(10, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(50.0),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF2C2C3E),
+                    Color(0xFF1C1C2E),
+                    Color(0xFF0F0F1E),
+                  ],
+                ),
+                border: Border.all(width: 12.0, color: Color(0xFF1A1A2E)),
+              ),
+            ),
+            Center(
+              child: Container(
+                margin: const EdgeInsets.all(20.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(38.0),
+                  child: child,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
