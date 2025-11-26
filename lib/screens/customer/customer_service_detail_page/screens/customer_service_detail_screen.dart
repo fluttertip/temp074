@@ -5,7 +5,9 @@ import 'package:homeservice/models/user_model.dart';
 import 'package:homeservice/providers/customer/customerprofileprovider/customer_profile_provider.dart';
 import 'package:homeservice/screens/shared/widgets/common_completeprofilemessage_overlay.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/widget_previews.dart';
 
+@Preview(name: 'My Sample Text')
 class CustomerServiceDescriptionPage extends StatefulWidget {
   final ServiceModel service;
   final UserModel vendorData;
@@ -406,66 +408,130 @@ class _CustomerServiceDescriptionPageState
     );
   }
 
-  Widget _buildBottomButton() {
-    return Container(
-      padding: EdgeInsets.all(AppTheme.spacingLG),
-      decoration: BoxDecoration(
-        color: AppTheme.background,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: () {
-          final provider = Provider.of<CustomerProfileProvider>(
-            context,
-            listen: false,
-          );
 
-          if (!provider.isCustomerProfileComplete) {
-            CompleteProfileBannerOverlay.show(
-              context,
-              message: "Complete your customer profile for booking services",
-              duration: const Duration(seconds: 5),
-            );
-            return;
-          }
-          //will cause error widget error dispose if navigation is not inside the future methods
+Widget _buildBottomButton() {
+  final provider = Provider.of<CustomerProfileProvider>(context, listen: false);
+  final currentCustomerId = provider.getCachedUser()?.uid ?? '';
 
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   SnackBar(
-          //     content: Text('Booking service...'),
-          //     backgroundColor: AppTheme.primary,
-          //     behavior: SnackBarBehavior.floating,
-          //   ),
-          // );
-          Navigator.pushNamed(
-            context,
-            '/customer/booking/intermediate',
-            arguments: {'service': widget.service, 'vendor': widget.vendorData},
-          );
-        },
+  // Check if the customer is trying to book their own service
+  final isOwnService = currentCustomerId == widget.vendorData.id;
 
-        style: AppTheme.primaryButtonStyle.copyWith(
-          backgroundColor: WidgetStateProperty.all(AppTheme.appbar),
-          padding: WidgetStateProperty.all(
-            EdgeInsets.symmetric(vertical: AppTheme.spacingLG),
-          ),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-            ),
+  return Container(
+    padding: EdgeInsets.all(AppTheme.spacingLG),
+    decoration: BoxDecoration(
+      color: AppTheme.background,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 8,
+          offset: Offset(0, -2),
+        ),
+      ],
+    ),
+    child: ElevatedButton(
+      onPressed: (isOwnService || !provider.isCustomerProfileComplete)
+          ? () {
+              final message = isOwnService
+                  ? "You cannot book your own service"
+                  : "Complete your customer profile for booking services";
+
+              CompleteProfileBannerOverlay.show(
+                context,
+                message: message,
+                duration: const Duration(seconds: 5),
+              );
+            }
+          : () {
+              Navigator.pushNamed(
+                context,
+                '/customer/booking/intermediate',
+                arguments: {
+                  'service': widget.service,
+                  'vendor': widget.vendorData
+                },
+              );
+            },
+      style: AppTheme.primaryButtonStyle.copyWith(
+        backgroundColor: WidgetStateProperty.all(
+          isOwnService ? Colors.grey : AppTheme.appbar,
+        ),
+        padding: WidgetStateProperty.all(
+          EdgeInsets.symmetric(vertical: AppTheme.spacingLG),
+        ),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMD),
           ),
         ),
-        child: Text(
-          'Book this service now',
-          style: AppTheme.buttonText.copyWith(fontSize: 16),
-        ),
       ),
-    );
-  }
+      child: Text(
+        isOwnService ? 'Cannot book your own service' : 'Book this service now',
+        style: AppTheme.buttonText.copyWith(fontSize: 16),
+      ),
+    ),
+  );
+}
+
+  // Widget _buildBottomButton() {
+  //   return Container(
+  //     padding: EdgeInsets.all(AppTheme.spacingLG),
+  //     decoration: BoxDecoration(
+  //       color: AppTheme.background,
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.05),
+  //           blurRadius: 8,
+  //           offset: Offset(0, -2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: ElevatedButton(
+  //       onPressed: () {
+  //         final provider = Provider.of<CustomerProfileProvider>(
+  //           context,
+  //           listen: false,
+  //         );
+
+  //         if (!provider.isCustomerProfileComplete) {
+  //           CompleteProfileBannerOverlay.show(
+  //             context,
+  //             message: "Complete your customer profile for booking services",
+  //             duration: const Duration(seconds: 5),
+  //           );
+  //           return;
+  //         }
+  //         //will cause error widget error dispose if navigation is not inside the future methods
+
+  //         // ScaffoldMessenger.of(context).showSnackBar(
+  //         //   SnackBar(
+  //         //     content: Text('Booking service...'),
+  //         //     backgroundColor: AppTheme.primary,
+  //         //     behavior: SnackBarBehavior.floating,
+  //         //   ),
+  //         // );
+  //         Navigator.pushNamed(
+  //           context,
+  //           '/customer/booking/intermediate',
+  //           arguments: {'service': widget.service, 'vendor': widget.vendorData},
+  //         );
+  //       },
+
+  //       style: AppTheme.primaryButtonStyle.copyWith(
+  //         backgroundColor: WidgetStateProperty.all(AppTheme.appbar),
+  //         padding: WidgetStateProperty.all(
+  //           EdgeInsets.symmetric(vertical: AppTheme.spacingLG),
+  //         ),
+  //         shape: WidgetStateProperty.all(
+  //           RoundedRectangleBorder(
+  //             borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+  //           ),
+  //         ),
+  //       ),
+  //       child: Text(
+  //         'Book this service now',
+  //         style: AppTheme.buttonText.copyWith(fontSize: 16),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

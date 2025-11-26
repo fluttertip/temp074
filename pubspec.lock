@@ -909,6 +909,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  widget_screenshot_plus:
+    dependency: "direct main"
+    description:
+      name: widget_screenshot_plus
+      sha256: b56fc7d8fbbdfceeb338be6ced955329ecff83251f2f92f4718dbd2856ad610d
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.7"
   win32:
     dependency: transitive
     description:
