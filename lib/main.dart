@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 // import 'package:homeservice/hardcodedseeder.dart';
 import 'package:homeservice/providers/auth/user_provider.dart';
 import 'package:homeservice/providers/base/base_provider.dart';
+import 'package:homeservice/providers/customer/customerbookingprovider/customer_booking_history_provider.dart';
+import 'package:homeservice/providers/customer/customerbookingprovider/customer_booking_provider.dart';
 import 'package:homeservice/providers/customer/customerhomepageprovider/banner_images_provider.dart';
 import 'package:homeservice/providers/customer/customerhomepageprovider/local_expert_provider.dart';
 import 'package:homeservice/providers/customer/customerhomepageprovider/popular_service_provider.dart';
@@ -42,10 +44,12 @@ class NepFixApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => BaseProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+
         //authentication providers
         ChangeNotifierProvider(create: (_) => UserProvider()),
        
-        //user providers
+        //customer providers
         ChangeNotifierProvider(create: (_) => BannerImageProvider()),
         ChangeNotifierProvider(create: (_) => LocalExpertProvider()),
         ChangeNotifierProvider(create: (_) => RecommendedServiceProvider()),
@@ -53,20 +57,22 @@ class NepFixApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TopServiceProvider()),
         ChangeNotifierProvider(create: (_) => StaticSearchBarAnimProvider()),
         ChangeNotifierProvider(create: (_) => CustomerAdvanceSearchProvider()),
+         // CustomerProfileProvider depends on UserProvider
+      ChangeNotifierProxyProvider<UserProvider, CustomerProfileProvider>(
+        create: (context) => CustomerProfileProvider(),
+        update: (context, userProvider, previous) {
+          // Update the CustomerProfileProvider with the latest UserProvider
+          final provider = previous ?? CustomerProfileProvider();
+          provider.updateUserProvider(userProvider);
+          return provider;
+        },
+      ),
+      ChangeNotifierProvider(create: (_) => CustomerBookingHistoryProvider()),
+       ChangeNotifierProvider(create: (_) => CustomerBookingProvider()),
+   
        
        //verndor providers
-        ChangeNotifierProxyProvider<UserProvider, CustomerProfileProvider>(
-          create: (_) => CustomerProfileProvider(),
-          update: (context, userProvider, previousCustomerProvider) {
-            final customerProvider =
-                previousCustomerProvider ?? CustomerProfileProvider();
-            customerProvider.updateUserProvider(userProvider);
-            return customerProvider;
-          },
-        ),
         ChangeNotifierProvider(create: (_) => VendorServicesProvider()),
-        ChangeNotifierProvider(create: (_) => LocationProvider()),
-
         ChangeNotifierProxyProvider<UserProvider, VendorProfileProvider>(
           create: (_) => VendorProfileProvider(),
           update: (context, userProvider, previousVendorProvider) {

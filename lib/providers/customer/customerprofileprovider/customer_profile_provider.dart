@@ -45,8 +45,19 @@ class CustomerProfileProvider extends BaseProvider {
     _bannerShown[screen] = true;
   }
 
+  // FIX: Implement the refresh method to actually refresh user data
   Future<void> refresh() async {
-    // Implement if needed
+    if (_userProvider == null) return;
+    
+    try {
+      print('🔄 [CustomerProfile] Refreshing user data...');
+      await _userProvider!.refreshUserData();
+      notifyListeners(); // Notify listeners after refresh
+      print('✅ [CustomerProfile] User data refreshed');
+    } catch (e) {
+      print('❌ [CustomerProfile] Failed to refresh: $e');
+      setError('Failed to refresh profile data');
+    }
   }
 
   void startEditing() {
@@ -54,19 +65,23 @@ class CustomerProfileProvider extends BaseProvider {
     _isEditing = true;
     _editingName = currentUser?.name ?? '';
     _editingAddress = currentUser?.address ?? '';
+    notifyListeners();
   }
 
   void cancelEditing() {
     _isEditing = false;
     _resetEditingFields();
+    notifyListeners();
   }
 
   void updateEditingName(String name) {
     _editingName = name;
+    notifyListeners();
   }
 
   void updateEditingAddress(String address) {
     _editingAddress = address;
+    notifyListeners();
   }
 
   Future<bool> updateCustomerPersonalDetails() async {
@@ -92,8 +107,11 @@ class CustomerProfileProvider extends BaseProvider {
 
     _setUpdating(true);
     clearError();
+    notifyListeners(); // FIX: Notify to show loading state
 
     try {
+      print('📝 [CustomerProfile] Updating profile...');
+      
       await _profileService.updateCustomerProfile(
         uid: uid,
         name: newName.isNotEmpty ? newName : null,
@@ -101,15 +119,23 @@ class CustomerProfileProvider extends BaseProvider {
         isprofilecompletecustomer: true,
       );
 
+      print('✅ [CustomerProfile] Profile updated in Firestore');
+
+      // FIX: Refresh the user data from UserProvider
       await refresh();
+      
       _isEditing = false;
       _resetEditingFields();
+      
+      print('✅ [CustomerProfile] Update complete');
       return true;
     } catch (e) {
+      print('❌ [CustomerProfile] Failed to update: $e');
       setError('Failed to update profile: ${e.toString()}');
       return false;
     } finally {
       _setUpdating(false);
+      notifyListeners(); // FIX: Notify to hide loading state
     }
   }
 
@@ -118,6 +144,7 @@ class CustomerProfileProvider extends BaseProvider {
 
     _setUpdating(true);
     clearError();
+    notifyListeners();
 
     try {
       await _profileService.updateCustomerProfile(
@@ -131,6 +158,7 @@ class CustomerProfileProvider extends BaseProvider {
       return false;
     } finally {
       _setUpdating(false);
+      notifyListeners();
     }
   }
 
@@ -139,6 +167,7 @@ class CustomerProfileProvider extends BaseProvider {
 
     _setUpdating(true);
     clearError();
+    notifyListeners();
 
     try {
       await _profileService.updateCustomerProfile(
@@ -152,6 +181,7 @@ class CustomerProfileProvider extends BaseProvider {
       return false;
     } finally {
       _setUpdating(false);
+      notifyListeners();
     }
   }
 

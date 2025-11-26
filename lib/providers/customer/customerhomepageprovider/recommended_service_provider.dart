@@ -1,5 +1,6 @@
+
 // ============================================
-// 3. RECOMMENDED SERVICE PROVIDER
+// FIXED RECOMMENDED SERVICE PROVIDER
 // ============================================
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:homeservice/models/servicewithprovider_model.dart';
@@ -21,22 +22,25 @@ class RecommendedServiceProvider extends BaseProvider with PaginationMixin {
   Future<void> loadRecommendedServicesWithProvider({
     bool forceRefresh = false,
   }) async {
-    if (isLoading) return;
-
-    if (_isInitialized || forceRefresh) {
-      setLoading(true);
+    // FIX: Removed the problematic `if (isLoading) return;` guard
+    
+    // Only skip if already initialized and not forcing refresh
+    if (_isInitialized && !forceRefresh) {
+      print('⏭️ [RecommendedService] Already initialized, skipping');
+      return;
     }
+
+    setLoading(true);
     clearError();
     resetPagination();
     _lastDocument = null;
 
     try {
+      print('🔄 [RecommendedService] Loading recommended services...');
       final result = await _homeService.fetchRecommendedServicesWithProvider();
       _recommendedServicesWithProvider = result;
       _isInitialized = true;
-      print(
-        'Loaded ${_recommendedServicesWithProvider.length} recommended services',
-      );
+      print('✅ [RecommendedService] Loaded ${_recommendedServicesWithProvider.length} services');
 
       if (result.isNotEmpty) {
         _lastDocument = result.last.lastDocument;
@@ -44,17 +48,19 @@ class RecommendedServiceProvider extends BaseProvider with PaginationMixin {
       } else {
         setNoMoreData();
       }
+      notifyListeners();
     } catch (e) {
       setError('Failed to load recommended services.');
       _isInitialized = true;
-      print('Error loading recommended services: $e');
+      print('❌ [RecommendedService] Error: $e');
+      notifyListeners();
     } finally {
       setLoading(false);
     }
   }
 
   Future<void> loadMoreRecommendedServices() async {
-    if (!hasMoreData || isLoadingMore || isLoading) return;
+    if (!hasMoreData || isLoadingMore) return;
 
     setLoadingMore(true);
 
@@ -70,8 +76,10 @@ class RecommendedServiceProvider extends BaseProvider with PaginationMixin {
       } else {
         setNoMoreData();
       }
+      notifyListeners();
     } catch (e) {
       setError('Failed to load more recommended services.');
+      notifyListeners();
     } finally {
       setLoadingMore(false);
     }

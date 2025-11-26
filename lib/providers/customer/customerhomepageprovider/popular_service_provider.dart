@@ -1,5 +1,8 @@
+
+
+
 // ============================================
-// 2. POPULAR SERVICE PROVIDER
+// FIXED POPULAR SERVICE PROVIDER
 // ============================================
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:homeservice/models/servicewithprovider_model.dart';
@@ -21,20 +24,25 @@ class PopularServiceProvider extends BaseProvider with PaginationMixin {
   Future<void> loadPopularServicesWithProvider({
     bool forceRefresh = false,
   }) async {
-    if (isLoading) return;
-
-    if (_isInitialized || forceRefresh) {
-      setLoading(true);
+    // FIX: Removed the problematic `if (isLoading) return;` guard
+    
+    // Only skip if already initialized and not forcing refresh
+    if (_isInitialized && !forceRefresh) {
+      print('⏭️ [PopularService] Already initialized, skipping');
+      return;
     }
+
+    setLoading(true);
     clearError();
     resetPagination();
     _lastDocument = null;
 
     try {
+      print('🔄 [PopularService] Loading popular services...');
       final result = await _homeService.fetchPopularServicesWithProvider();
       _popularServicesWithProvider = result;
       _isInitialized = true;
-      print('Loaded ${_popularServicesWithProvider.length} popular services');
+      print('✅ [PopularService] Loaded ${_popularServicesWithProvider.length} services');
 
       if (result.isNotEmpty) {
         _lastDocument = result.last.lastDocument;
@@ -42,17 +50,19 @@ class PopularServiceProvider extends BaseProvider with PaginationMixin {
       } else {
         setNoMoreData();
       }
+      notifyListeners();
     } catch (e) {
       setError('Failed to load popular services.');
       _isInitialized = true;
-      print('Error loading popular services: $e');
+      print('❌ [PopularService] Error: $e');
+      notifyListeners();
     } finally {
       setLoading(false);
     }
   }
 
   Future<void> loadMorePopularServices() async {
-    if (!hasMoreData || isLoadingMore || isLoading) return;
+    if (!hasMoreData || isLoadingMore) return;
 
     setLoadingMore(true);
 
@@ -68,8 +78,10 @@ class PopularServiceProvider extends BaseProvider with PaginationMixin {
       } else {
         setNoMoreData();
       }
+      notifyListeners();
     } catch (e) {
       setError('Failed to load more popular services.');
+      notifyListeners();
     } finally {
       setLoadingMore(false);
     }

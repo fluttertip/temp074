@@ -4,6 +4,8 @@ import 'package:homeservice/models/servicewithprovider_model.dart';
 import 'package:homeservice/screens/auth/google_signin_screen.dart';
 import 'package:homeservice/screens/customer/customer_advanced_search_screen/screens/customer_advanced_search_screen.dart';
 import 'package:homeservice/screens/customer/customer_booking_screen/screens/customer_booking_history_screen.dart';
+import 'package:homeservice/screens/customer/customer_booking_screen/screens/customer_booking_success_screen.dart';
+import 'package:homeservice/screens/customer/customer_booking_screen/screens/customer_intermediate_booking_screen.dart';
 import 'package:homeservice/screens/customer/customer_profilepage_screen/screens/customer_profile_screen.dart';
 import 'package:homeservice/screens/customer/customer_service_detail_page/screens/customer_service_detail_screen.dart';
 import 'package:homeservice/screens/shared/components/common_unified_home_screen.dart';
@@ -27,6 +29,8 @@ class AppRoutes {
   static const String customerProfile = '/customer/profile';
   static const String customerAdvanceSearch = '/customer/advanced-search';
   static const String customerServiceDetail = '/customer/service-detail';
+  static const String customerIntermediateBooking ='/customer/booking/intermediate';
+  static const String customerBookingSuccess = '/customer/booking/success';
 
   //vendor routes
   static const String vendorHome = '/vendor/home';
@@ -60,6 +64,29 @@ class AppRoutes {
         vendorData: args.provider,
       );
     },
+       customerIntermediateBooking: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args == null || args is! Map<String, dynamic>) {
+        return const CommonMessageScreen(
+          message: 'Invalid booking data',
+          icon: Icons.error_outline,
+        );
+      }
+      return const IntermediateBookingScreen();
+    },
+
+    customerBookingSuccess: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args == null || args is! Map<String, dynamic>) {
+        return const CommonMessageScreen(
+          message: 'Invalid booking confirmation data',
+          icon: Icons.error_outline,
+        );
+      }
+      return const BookingSuccessScreen();
+    },
+
+
 
     //vendor routes
     vendorHome: (context) => const UnifiedHomeScreen(),

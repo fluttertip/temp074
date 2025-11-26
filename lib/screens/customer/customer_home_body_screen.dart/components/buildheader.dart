@@ -42,11 +42,7 @@ class _BuildHeaderState extends State<BuildHeader> {
       builder: (context, locationProvider, child) {
         return Row(
           children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, '/customer/profile');
-              },
-              child: CircleAvatar(
+            CircleAvatar(
                 radius: 25,
                 backgroundImage: widget.isAuthenticated &&
                         widget.userprofilePhotoUrl != null
@@ -54,7 +50,6 @@ class _BuildHeaderState extends State<BuildHeader> {
                     : const AssetImage('assets/images/person/person.png')
                         as ImageProvider,
               ),
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: widget.isAuthenticated && widget.userDisplayName != null

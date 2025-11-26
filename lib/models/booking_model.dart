@@ -93,14 +93,13 @@ class Pricing {
 
 class ContactInfo {
   final String name;
-  final String phone;
 
-  ContactInfo({required this.name, required this.phone});
+  ContactInfo({required this.name,});
 
   factory ContactInfo.fromMap(Map<String, dynamic> map) =>
-      ContactInfo(name: map['name'], phone: map['phone']);
+      ContactInfo(name: map['name'], );
 
-  Map<String, dynamic> toMap() => {'name': name, 'phone': phone};
+  Map<String, dynamic> toMap() => {'name': name, };
 }
 
 class Timeline {

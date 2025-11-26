@@ -1,5 +1,7 @@
+
+
 // ============================================
-// 4. TOP SERVICE PROVIDER
+// FIXED TOP SERVICE PROVIDER
 // ============================================
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:homeservice/models/servicewithprovider_model.dart';
@@ -19,22 +21,25 @@ class TopServiceProvider extends BaseProvider with PaginationMixin {
   bool get isInitialized => _isInitialized;
 
   Future<void> loadTopServicesWithProvider({bool forceRefresh = false}) async {
-    if (isLoading) return;
-
-    if (_isInitialized || forceRefresh) {
-      setLoading(true);
+    // FIX: Removed the problematic `if (isLoading) return;` guard
+    
+    // Only skip if already initialized and not forcing refresh
+    if (_isInitialized && !forceRefresh) {
+      print('⏭️ [TopService] Already initialized, skipping');
+      return;
     }
+
+    setLoading(true);
     clearError();
     resetPagination();
     _lastDocument = null;
 
     try {
+      print('🔄 [TopService] Loading top services...');
       final result = await _homeService.fetchTopProviderServicesWithProvider();
       _topProviderServicesWithProvider = result;
       _isInitialized = true;
-      print(
-        'Loaded ${_topProviderServicesWithProvider.length} top provider services',
-      );
+      print('✅ [TopService] Loaded ${_topProviderServicesWithProvider.length} services');
 
       if (result.isNotEmpty) {
         _lastDocument = result.last.lastDocument;
@@ -42,17 +47,19 @@ class TopServiceProvider extends BaseProvider with PaginationMixin {
       } else {
         setNoMoreData();
       }
+      notifyListeners();
     } catch (e) {
       setError('Failed to load top provider services.');
       _isInitialized = true;
-      print('Error loading top services: $e');
+      print('❌ [TopService] Error: $e');
+      notifyListeners();
     } finally {
       setLoading(false);
     }
   }
 
   Future<void> loadMoreTopServices() async {
-    if (!hasMoreData || isLoadingMore || isLoading) return;
+    if (!hasMoreData || isLoadingMore) return;
 
     setLoadingMore(true);
 
@@ -68,8 +75,10 @@ class TopServiceProvider extends BaseProvider with PaginationMixin {
       } else {
         setNoMoreData();
       }
+      notifyListeners();
     } catch (e) {
       setError('Failed to load more top provider services.');
+      notifyListeners();
     } finally {
       setLoadingMore(false);
     }

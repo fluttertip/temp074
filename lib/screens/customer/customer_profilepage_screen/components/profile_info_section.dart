@@ -105,20 +105,6 @@ class _ProfileInfoSectionState extends State<ProfileInfoSection> {
                 ),
                 const SizedBox(height: 24),
 
-                TextField(
-                  controller: TextEditingController(
-                    // text: user.phoneNumber ?? '',
-                  ),
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: 'Phone Number',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(

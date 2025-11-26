@@ -1,6 +1,6 @@
 
 // ============================================
-// 1. LOCAL EXPERT PROVIDER
+// FIXED LOCAL EXPERT PROVIDER
 // ============================================
 import 'package:homeservice/models/user_model.dart';
 import 'package:homeservice/providers/base/base_provider.dart';
@@ -19,22 +19,29 @@ class LocalExpertProvider extends BaseProvider {
     String location, {
     bool forceRefresh = false,
   }) async {
-    if (isLoading) return;
-
-    if (_isInitialized || forceRefresh) {
-      setLoading(true);
+    // FIX: Removed the problematic `if (isLoading) return;` guard
+    
+    // Only skip if already initialized and not forcing refresh
+    if (_isInitialized && !forceRefresh) {
+      print('⏭️ [LocalExpert] Already initialized, skipping');
+      return;
     }
+
+    setLoading(true);
     clearError();
 
     try {
+      print('🔄 [LocalExpert] Loading experts for $location...');
       final result = await _homeService.fetchLocalExperts(location);
       _localExperts = result;
       _isInitialized = true;
-      print('Loaded ${_localExperts.length} local experts for $location');
+      print('✅ [LocalExpert] Loaded ${_localExperts.length} experts');
+      notifyListeners();
     } catch (e) {
       setError('Failed to load local experts.');
       _isInitialized = true;
-      print('Error loading local experts: $e');
+      print('❌ [LocalExpert] Error: $e');
+      notifyListeners();
     } finally {
       setLoading(false);
     }

@@ -80,7 +80,7 @@ class UserModel {
       role: ['customer', 'vendor'], // Both roles from the start
       authProvider: 'google',
       activeRole: 'customer', // Default active role
-      isprofilecompletecustomer: false,
+      isprofilecompletecustomer: true,
       isprofilecompletevendor: false,
       kycStatus: 'unverified',
       notificationSettings: {'email': true, 'push': true, 'sms': false},
@@ -112,7 +112,7 @@ class UserModel {
       role: (data['role'] as List?)?.map((e) => e.toString()).toList() ?? ['customer'],
       authProvider: data['authProvider'] ?? 'google',
       activeRole: data['activeRole'] ?? 'customer',
-      isprofilecompletecustomer: data['isprofilecompletecustomer'] ?? false,
+      isprofilecompletecustomer: data['isprofilecompletecustomer'] ?? true,
       isprofilecompletevendor: data['isprofilecompletevendor'] ?? false,
       kycStatus: data['kycStatus']?.toString() ?? 'unverified',
       notificationSettings: (data['notificationSettings'] as Map?)?.map(
@@ -279,7 +279,7 @@ class UserModel {
       role: List<String>.from(map['role'] ?? ['customer']),
       authProvider: map['authProvider'] ?? 'google',
       activeRole: map['activeRole'] ?? 'customer',
-      isprofilecompletecustomer: map['isprofilecompletecustomer'] ?? false,
+      isprofilecompletecustomer: map['isprofilecompletecustomer'] ?? true,
       isprofilecompletevendor: map['isprofilecompletevendor'] ?? false,
       kycStatus: map['kycStatus'] ?? 'unverified',
       notificationSettings: Map<String, bool>.from(map['notificationSettings'] ?? {'email': true, 'push': true, 'sms': false}),

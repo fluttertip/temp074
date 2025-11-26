@@ -1,3 +1,5 @@
+
+
 import 'package:flutter/material.dart';
 import 'package:homeservice/core/theme/app_theme.dart';
 import 'package:homeservice/providers/auth/user_provider.dart';
@@ -10,7 +12,6 @@ import 'package:homeservice/providers/customer/customerprofileprovider/customer_
 import 'package:homeservice/screens/customer/shared/components/build_horizontal_service_with_provider_list.dart';
 import 'package:homeservice/screens/customer/shared/components/build_vertical_service_with_provider_list.dart';
 import 'package:homeservice/screens/customer/customer_home_body_screen.dart/components/buildbanner.dart';
-// import 'package:homeservice/screens/customer/customer_home_body_screen.dart/components/buildcreatepost.dart';
 import 'package:homeservice/screens/customer/customer_home_body_screen.dart/components/buildexpertsection.dart';
 import 'package:homeservice/screens/customer/customer_home_body_screen.dart/components/buildexploreservicesgrid.dart';
 import 'package:homeservice/screens/customer/customer_home_body_screen.dart/components/buildheader.dart';
@@ -27,20 +28,31 @@ class CustomerHomeBody extends StatefulWidget {
 }
 
 class _CustomerHomeBodyState extends State<CustomerHomeBody> {
-
   late ScrollController _mainScrollController;
+  bool _hasLoadedInitialData = false; // Track if we've loaded data
 
   @override
   void initState() {
     super.initState();
     _mainScrollController = ScrollController();
     _mainScrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     
-    // CRITICAL: Load data after the first frame is built
-    // This prevents "setState() during build" errors
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialData();
-    });
+    // Load data only once when the widget is first built
+    if (!_hasLoadedInitialData) {
+      _hasLoadedInitialData = true;
+      
+      // Load data immediately after dependencies are available
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadInitialData();
+        }
+      });
+    }
   }
 
   @override
@@ -71,6 +83,8 @@ class _CustomerHomeBodyState extends State<CustomerHomeBody> {
   Future<void> _loadInitialData() async {
     if (!mounted) return;
 
+    print('🔄 [CustomerHome] Loading initial data...');
+
     final bannerProvider = Provider.of<BannerImageProvider>(
       context,
       listen: false,
@@ -92,14 +106,25 @@ class _CustomerHomeBodyState extends State<CustomerHomeBody> {
       listen: false,
     );
 
-    // Load all data in parallel
-    await Future.wait([
-      bannerProvider.loadBannerImages(),
-      localExpertProvider.loadLocalExperts('Kathmandu'),
-      recommendedProvider.loadRecommendedServicesWithProvider(),
-      topServiceProvider.loadTopServicesWithProvider(),
-      popularProvider.loadPopularServicesWithProvider(),
-    ]);
+    // FIX: Load data sequentially with proper error handling
+    // This ensures each provider completes before the next starts
+    try {
+      // Load banners first (usually fastest)
+      await bannerProvider.loadBannerImages();
+      print('✅ [CustomerHome] Banners loaded');
+
+      // Load all service data in parallel (they don't conflict)
+      await Future.wait([
+        localExpertProvider.loadLocalExperts('Kathmandu'),
+        recommendedProvider.loadRecommendedServicesWithProvider(),
+        topServiceProvider.loadTopServicesWithProvider(),
+        popularProvider.loadPopularServicesWithProvider(),
+      ]);
+
+      print('✅ [CustomerHome] All data loaded successfully');
+    } catch (e) {
+      print('❌ [CustomerHome] Error loading data: $e');
+    }
   }
 
   @override
@@ -129,7 +154,6 @@ class _CustomerHomeBodyState extends State<CustomerHomeBody> {
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     color: Colors.white,
-                    // color: const Color(0xFF033e8a),
                     padding: const EdgeInsets.only(
                       left: 16,
                       right: 16,
@@ -160,7 +184,6 @@ class _CustomerHomeBodyState extends State<CustomerHomeBody> {
                             return const SizedBox.shrink();
                           },
                         ),
-
                         Column(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -171,7 +194,7 @@ class _CustomerHomeBodyState extends State<CustomerHomeBody> {
                                       userProvider.isAuthenticated &&
                                       userProvider.getCachedUser() != null,
                                   userDisplayName: userProvider.getCachedUser()?.name,
-                                userprofilePhotoUrl: userProvider.getCachedUser()?.profilePhotoUrl,
+                                  userprofilePhotoUrl: userProvider.getCachedUser()?.profilePhotoUrl,
                                 );
                               },
                             ),
@@ -231,6 +254,17 @@ class _CustomerHomeBodyState extends State<CustomerHomeBody> {
                 sliver: SliverToBoxAdapter(
                   child: Consumer<LocalExpertProvider>(
                     builder: (context, localExpertProvider, _) {
+                      // FIX: Show loading state for experts
+                      if (localExpertProvider.isLoading && 
+                          localExpertProvider.localExperts.isEmpty) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                      
                       return BuildExpertSection(
                         dataforlocalExperts: localExpertProvider.localExperts,
                       );
@@ -240,13 +274,6 @@ class _CustomerHomeBodyState extends State<CustomerHomeBody> {
               ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 10)),
-
-              // Create Post
-              // SliverPadding(
-              //   padding: const EdgeInsets.all(16),
-              //   sliver: SliverToBoxAdapter(child: BuildCreatePost()),
-              // ),
-              // const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
               // Recommended Services
               SliverPadding(
