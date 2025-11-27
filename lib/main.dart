@@ -36,65 +36,6 @@ void main() async {
   runApp(const NepFixApp());
 }
 
-// class NepFixApp extends StatelessWidget {
-//   const NepFixApp({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return MultiProvider(
-//       providers: [
-//         ChangeNotifierProvider(create: (_) => BaseProvider()),
-//         ChangeNotifierProvider(create: (_) => LocationProvider()),
-
-//         //authentication providers
-//         ChangeNotifierProvider(create: (_) => UserProvider()),
-       
-//         //customer providers
-//         ChangeNotifierProvider(create: (_) => BannerImageProvider()),
-//         ChangeNotifierProvider(create: (_) => LocalExpertProvider()),
-//         ChangeNotifierProvider(create: (_) => RecommendedServiceProvider()),
-//         ChangeNotifierProvider(create: (_) => PopularServiceProvider()),
-//         ChangeNotifierProvider(create: (_) => TopServiceProvider()),
-//         ChangeNotifierProvider(create: (_) => StaticSearchBarAnimProvider()),
-//         ChangeNotifierProvider(create: (_) => CustomerAdvanceSearchProvider()),
-//          // CustomerProfileProvider depends on UserProvider
-//       ChangeNotifierProxyProvider<UserProvider, CustomerProfileProvider>(
-//         create: (context) => CustomerProfileProvider(),
-//         update: (context, userProvider, previous) {
-//           // Update the CustomerProfileProvider with the latest UserProvider
-//           final provider = previous ?? CustomerProfileProvider();
-//           provider.updateUserProvider(userProvider);
-//           return provider;
-//         },
-//       ),
-//       ChangeNotifierProvider(create: (_) => CustomerBookingHistoryProvider()),
-//        ChangeNotifierProvider(create: (_) => CustomerBookingProvider()),
-   
-       
-//        //verndor providers
-//         ChangeNotifierProvider(create: (_) => VendorServicesProvider()),
-//         ChangeNotifierProxyProvider<UserProvider, VendorProfileProvider>(
-//           create: (_) => VendorProfileProvider(),
-//           update: (context, userProvider, previousVendorProvider) {
-//             final vendorProvider =
-//                 previousVendorProvider ?? VendorProfileProvider();
-//             vendorProvider.updateUserProvider(userProvider);
-//             return vendorProvider;
-//           },
-//         ),
-//       ],
-//       child: MaterialApp(
-//         debugShowCheckedModeBanner: false,
-//         title: 'NepFix Home Services',
-//         color: Colors.transparent,
-//         initialRoute: AppRoutes.splash,
-//         routes: AppRoutes.routes,
-//       ),
-//     );
-//   }
-// }
-
-
 class NepFixApp extends StatelessWidget {
   const NepFixApp({super.key});
 

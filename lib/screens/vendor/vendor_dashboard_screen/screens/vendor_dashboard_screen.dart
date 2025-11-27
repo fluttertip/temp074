@@ -1,419 +1,232 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:homeservice/providers/auth/user_provider.dart';
 import 'package:homeservice/providers/vendor/vendorhomeprovider/vendor_homepage_provider.dart';
-import 'package:homeservice/screens/vendor/vendor_dashboard_screen/controllers/vendor_dashboard_controller.dart';
 import 'package:homeservice/models/booking_model.dart';
-import 'package:homeservice/providers/vendor/vendorprofileprovider/vendor_profile_provider.dart';
-import 'package:homeservice/screens/shared/widgets/common_completeprofilemessage_overlay.dart';
-import 'package:homeservice/screens/vendor/vendor_dashboard_screen/widgets/action_card.dart';
-import 'package:homeservice/screens/vendor/vendor_dashboard_screen/widgets/activity_item.dart';
-import 'package:homeservice/screens/vendor/vendor_dashboard_screen/widgets/stat_card.dart';
-import 'package:homeservice/widgets/common_wrapper/exit_confirmation_wrapper.dart';
-import 'package:provider/provider.dart';
 
-class VendorDashboardScreen extends StatelessWidget {
+class VendorDashboardScreen extends StatefulWidget {
   const VendorDashboardScreen({super.key});
+
+  @override
+  State<VendorDashboardScreen> createState() => _VendorDashboardScreenState();
+}
+
+class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
+  String _filter = 'all';
 
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final vendorId = userProvider.getCachedUser()?.uid ?? '';
+    final cachedUser = userProvider.getCachedUser();
 
-    return ExitConfirmationWrapper(
-      titleMessage: "Exit App",
-      contentMessage: "Do you want to exit the app?",
-      forceExit: false,
+    if (cachedUser == null) {
+      return const Scaffold(
+        body: Center(child: Text('No vendor signed in')),
+      );
+    }
+
+    return ChangeNotifierProvider<VendorHomePageProvider>(
+      create: (_) {
+        final p = VendorHomePageProvider();
+        p.init(cachedUser.uid);
+        return p;
+      },
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: const Text('Provider Dashboard'),
-          backgroundColor: Colors.blue.shade600,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          actions: [
-            // PopupMenuButton<String>(
-            //   icon: const Icon(Icons.more_vert),
-            //   onSelected: (value) {
-            //     switch (value) {
-            //       case 'profile':
-            //         Navigator.pushNamed(context, '/vendor/profile');
-            //         break;
-            //       case 'logout':
-            //         VendorDashboardController.showLogoutDialog(context);
-            //         break;
-            //     }
-            //   },
-            //   itemBuilder: (context) => [
-            //     const PopupMenuItem(
-            //       value: 'profile',
-            //       child: Row(
-            //         children: [
-            //           Icon(Icons.person),
-            //           SizedBox(width: 8),
-            //           Text('Profile'),
-            //         ],
-            //       ),
-            //     ),
-            //     const PopupMenuItem(
-            //       value: 'logout',
-            //       child: Row(
-            //         children: [
-            //           Icon(Icons.logout),
-            //           SizedBox(width: 8),
-            //           Text('Logout'),
-            //         ],
-            //       ),
-            //     ),
-            //   ],
-            // ),
-          ],
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Consumer<VendorProfileProvider>(
-                  builder: (context, provider, _) {
-                    if (!provider.isVendorProfileComplete &&
-                        !provider.isBannerShown('vendor_dashboard')) {
-                      provider.markBannerShown('vendor_dashboard');
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        //   showCompleteProfileBanner(
-                        //     context,
-                        //     "complete your vendor profile to unlock all features",
-                        //     onTap: () {},
-                        //   );
-                        CompleteProfileBannerOverlay.show(
-                          context,
-                          message:
-                              "complete your vendor profile to unlock all features",
-                          duration: const Duration(seconds: 5),
-                        );
-                      });
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-                Consumer<UserProvider>(
-                  builder: (context, userProvider, child) {
-                    return Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.blue.shade600, Colors.blue.shade700],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 25,
-                            backgroundColor: Colors.white,
-                            child: Icon(
-                              Icons.person,
-                              color: Colors.blue,
-                              size: 30,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('username later implement',
-                                  // 'Welcome back, ${userProvider.userDisplayName}!',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Manage your services and bookings',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
+        appBar: AppBar(title: const Text('Vendor Dashboard')),
+        body: Consumer<VendorHomePageProvider>(
+          builder: (context, vm, _) {
+            final bookings = _applyFilter(vm.bookings, _filter);
 
-                // Vendor bookings provider and section
-                ChangeNotifierProvider<VendorHomePageProvider>(
-                  create: (_) => VendorHomePageProvider()..init(vendorId),
-                  child: Consumer<VendorHomePageProvider>(
-                    builder: (context, vprovider, _) {
-                      final counts = vprovider.counts;
-                      return Column(
+            return vm.loading
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: () async => vm.refresh(cachedUser.uid),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Bookings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: BookingStatus.values.map((s) {
-                                final cnt = counts[s] ?? 0;
-                                return Container(
-                                  margin: const EdgeInsets.only(right: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: [
-                                      BoxShadow(color: Colors.grey.shade200, blurRadius: 6),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Text(s.name, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                      const SizedBox(height: 4),
-                                      Text(cnt.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
+                          _buildStatsRow(vm),
                           const SizedBox(height: 12),
-                          if (vprovider.loading) const Center(child: CircularProgressIndicator())
-                          else if (vprovider.bookings.isEmpty) const Text('No bookings yet')
-                          else ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: vprovider.bookings.length > 5 ? 5 : vprovider.bookings.length,
-                            itemBuilder: (context, index) {
-                              final b = vprovider.bookings[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: ListTile(
-                                  leading: CircleAvatar(backgroundImage: b.serviceDetails.imageUrl.isNotEmpty ? NetworkImage(b.serviceDetails.imageUrl) : null, child: b.serviceDetails.imageUrl.isEmpty ? const Icon(Icons.build) : null),
-                                  title: Text(b.serviceDetails.title),
-                                  subtitle: Text('${b.customerContact.name} • ${b.scheduledDateTime}'),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (b.status == BookingStatus.pending) ...[
-                                        IconButton(
-                                          icon: const Icon(Icons.check, color: Colors.green),
-                                          onPressed: () async {
-                                            final ok = await VendorDashboardController.showStatusChangeDialog(context, newStatus: BookingStatus.confirmed, title: 'Confirm booking');
-                                            if (ok == true) {
-                                              await vprovider.updateStatus(b.id, BookingStatus.confirmed);
-                                              VendorDashboardController.showSimpleMessage(context, 'Booking confirmed');
-                                            }
-                                          },
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.close, color: Colors.red),
-                                          onPressed: () async {
-                                            final ok = await VendorDashboardController.showStatusChangeDialog(context, newStatus: BookingStatus.rejected, title: 'Reject booking');
-                                            if (ok == true) {
-                                              await vprovider.updateStatus(b.id, BookingStatus.rejected);
-                                              VendorDashboardController.showSimpleMessage(context, 'Booking rejected');
-                                            }
-                                          },
-                                        ),
-                                      ] else if (b.status == BookingStatus.confirmed) ...[
-                                        IconButton(
-                                          icon: const Icon(Icons.play_arrow, color: Colors.orange),
-                                          onPressed: () async {
-                                            final ok = await VendorDashboardController.showStatusChangeDialog(context, newStatus: BookingStatus.inProgress, title: 'Start service');
-                                            if (ok == true) {
-                                              await vprovider.updateStatus(b.id, BookingStatus.inProgress);
-                                              VendorDashboardController.showSimpleMessage(context, 'Service started');
-                                            }
-                                          },
-                                        ),
-                                      ] else if (b.status == BookingStatus.inProgress) ...[
-                                        IconButton(
-                                          icon: const Icon(Icons.check_circle, color: Colors.blue),
-                                          onPressed: () async {
-                                            final ok = await VendorDashboardController.showStatusChangeDialog(context, newStatus: BookingStatus.completed, title: 'Complete service');
-                                            if (ok == true) {
-                                              await vprovider.updateStatus(b.id, BookingStatus.completed);
-                                              VendorDashboardController.showSimpleMessage(context, 'Service completed');
-                                            }
-                                          },
-                                        ),
-                                      ] else ...[
-                                        const SizedBox.shrink()
-                                      ]
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 16),
+                          _buildFilterChips(),
+                          const SizedBox(height: 12),
+                          Text('Bookings', style: Theme.of(context).textTheme.titleLarge),
+                          const SizedBox(height: 8),
+                          if (bookings.isEmpty)
+                            const Center(child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24.0),
+                              child: Text('No bookings found'),
+                            ))
+                          else
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: bookings.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final b = bookings[index];
+                                return _buildBookingCard(context, vm, b);
+                              },
+                            ),
                         ],
-                      );
-                    },
-                  ),
-                ),
-
-                const Text(
-                  ' Stats',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatCard(
-                        title: 'Active Bookings',
-                        value: '12',
-                        icon: Icons.calendar_today,
-                        color: Colors.blue,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatCard(
-                        title: 'Total Earnings',
-                        value: 'Rs. 25,000',
-                        icon: null,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatCard(
-                        title: 'Services',
-                        value: '8',
-                        icon: Icons.build,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatCard(
-                        title: 'Rating',
-                        value: '4.8',
-                        icon: Icons.star,
-                        color: Colors.amber,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  ' Actions',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.2,
-                  children: [
-                    ActionCard(
-                      title: 'Manage Services',
-                      icon: Icons.build,
-                      color: Colors.blue,
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/vendor/services'),
-                    ),
-                    ActionCard(
-                      title: 'Booking Requests',
-                      icon: Icons.calendar_today,
-                      color: Colors.green,
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/vendor/bookings'),
-                    ),
-                    ActionCard(
-                      title: 'Earnings',
-                      icon: Icons.money_outlined,
-                      color: Colors.orange,
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/vendor/earnings'),
-                    ),
-                    ActionCard(
-                      title: 'Profile',
-                      icon: Icons.person,
-                      color: Colors.purple,
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/vendor/profile'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Recent Activity',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                const ActivityItem(
-                  title: 'New booking request for Plumbing service',
-                  time: '2 hours ago',
-                  icon: Icons.notifications,
-                  color: Colors.blue,
-                ),
-                const ActivityItem(
-                  title: 'Payment received for Electrical service',
-                  time: '5 hours ago',
-                  icon: Icons.payment,
-                  color: Colors.green,
-                ),
-                const ActivityItem(
-                  title: 'Service completed - Cleaning service',
-                  time: '1 day ago',
-                  icon: Icons.check_circle,
-                  color: Colors.orange,
-                ),
-
-                // //create elevated button with onpressed property
-                // const SizedBox(height: 30),
-                // Center(
-                //   child: ElevatedButton.icon(
-                //     icon: const Icon(Icons.settings),
-                //     label: const Text(' vendor Settings'),
-                //     style: ElevatedButton.styleFrom(
-                //       padding: const EdgeInsets.symmetric(
-                //         horizontal: 24,
-                //         vertical: 12,
-                //       ),
-                //       textStyle: const TextStyle(
-                //         fontSize: 16,
-                //         fontWeight: FontWeight.bold,
-                //       ),
-                //     ),
-                //     onPressed: () {
-                //       Navigator.push(
-                //         context,
-                //         MaterialPageRoute(
-                //           builder: (context) => const VendorSettingsScreen(),
-                //         ),
-                //       );
-                //     },
-                //   ),
-                // ),
-              ],
-            ),
-          ),
+                  );
+          },
         ),
       ),
     );
+  }
+
+  List<BookingModel> _applyFilter(List<BookingModel> list, String filter) {
+    if (filter == 'all') return list;
+    try {
+      final BookingStatus status = BookingStatus.values.firstWhere((s) => s.name == filter);
+      return list.where((b) => b.status == status).toList();
+    } catch (_) {
+      return list;
+    }
+  }
+
+  Widget _buildStatsRow(VendorHomePageProvider vm) {
+    return Row(
+      children: [
+        Expanded(child: _statCard('Completed', vm.completedCount.toString(), Icons.check_circle, Colors.green)),
+        const SizedBox(width: 8),
+        Expanded(child: _statCard('Earnings', '₹${vm.totalEarnings.toStringAsFixed(0)}', Icons.attach_money, Colors.indigo)),
+        const SizedBox(width: 8),
+        Expanded(child: _statCard('Services', vm.totalServicesOffered.toString(), Icons.build, Colors.orange)),
+      ],
+    );
+  }
+
+  Widget _statCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            CircleAvatar(backgroundColor: color.withOpacity(0.15), child: Icon(icon, color: color)),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                const SizedBox(height: 6),
+                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    final chips = <String>['all'] + BookingStatus.values.map((e) => e.name).toList();
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: chips.map((c) {
+          final selected = _filter == c;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              label: Text(c == 'all' ? 'All' : _prettyStatus(c)),
+              selected: selected,
+              onSelected: (_) => setState(() => _filter = c),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _prettyStatus(String name) {
+    return name.replaceAllMapped(RegExp(r'[A-Z]'), (m) => ' ${m.group(0)}').trim().capitalize();
+  }
+
+  Widget _buildBookingCard(BuildContext context, VendorHomePageProvider vm, BookingModel b) {
+    final scheduled = b.scheduledDateTime.toLocal();
+    final scheduledText = '${scheduled.day}/${scheduled.month}/${scheduled.year} ${scheduled.hour.toString().padLeft(2, '0')}:${scheduled.minute.toString().padLeft(2, '0')}';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text(b.serviceDetails.title, style: const TextStyle(fontWeight: FontWeight.bold))),
+                Chip(label: Text(b.status.name)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('Customer: ${b.customerContact.name}'),
+            const SizedBox(height: 4),
+            Text('When: $scheduledText'),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: _actionButtonsForStatus(context, vm, b),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _actionButtonsForStatus(BuildContext context, VendorHomePageProvider vm, BookingModel b) {
+    final List<Widget> actions = [];
+    void doUpdate(BookingStatus status) async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Confirm'),
+          content: Text('Are you sure you want to mark this booking as ${status.name}?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Yes')),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        try {
+          await vm.updateStatus(b.id, status);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Booking updated to ${status.name}')));
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+        }
+      }
+    }
+
+    switch (b.status) {
+      case BookingStatus.pending:
+        actions.add(TextButton(onPressed: () => doUpdate(BookingStatus.confirmed), child: const Text('Confirm')));
+        actions.add(TextButton(onPressed: () => doUpdate(BookingStatus.rejected), child: const Text('Reject')));
+        break;
+      case BookingStatus.confirmed:
+        actions.add(TextButton(onPressed: () => doUpdate(BookingStatus.inProgress), child: const Text('Start')));
+        actions.add(TextButton(onPressed: () => doUpdate(BookingStatus.cancelled), child: const Text('Cancel')));
+        break;
+      case BookingStatus.inProgress:
+        actions.add(TextButton(onPressed: () => doUpdate(BookingStatus.completed), child: const Text('Complete')));
+        break;
+      default:
+        // no actions
+        break;
+    }
+
+    return actions;
+  }
+}
+
+extension _StringExt on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return this[0].toUpperCase() + substring(1);
   }
 }

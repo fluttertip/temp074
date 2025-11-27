@@ -54,6 +54,32 @@ class VendorHomePageProvider extends ChangeNotifier {
     await _service.updateBookingStatus(bookingId, status);
   }
 
+  /// Total earnings from completed and paid bookings
+  double get totalEarnings {
+    double sum = 0.0;
+    for (var b in _bookings) {
+      try {
+        if (b.status == BookingStatus.completed && b.isPaymentCompleted) {
+          sum += b.pricing.finalPrice;
+        }
+      } catch (_) {}
+    }
+    return sum;
+  }
+
+  /// Number of completed bookings
+  int get completedCount => counts[BookingStatus.completed] ?? 0;
+
+  /// Number of unique services this vendor has in bookings (simple metric)
+  int get totalServicesOffered {
+    try {
+      final ids = _bookings.map((b) => b.serviceDetails.serviceId).toSet();
+      return ids.length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   @override
   void dispose() {
     _sub?.cancel();
