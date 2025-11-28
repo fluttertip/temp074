@@ -7,13 +7,26 @@ class VendorHomePageServices {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<BookingModel>> getVendorBookings(String vendorId) async {
+    print('🔄 [VendorService] Fetching bookings for vendorId: $vendorId');
     final qs = await _firestore
         .collection('bookings')
         .where('vendorId', isEqualTo: vendorId)
         .orderBy('createdAt', descending: true)
         .get();
 
-    return qs.docs.map((d) => BookingModel.fromFirestore(d)).toList();
+    print('✅ [VendorService] Query returned ${qs.docs.length} bookings');
+    final bookings = <BookingModel>[];
+    for (var doc in qs.docs) {
+      try {
+        final b = BookingModel.fromFirestore(doc);
+        bookings.add(b);
+        print('  ✓ Parsed booking: ${doc.id} - ${b.serviceDetails.title} (${b.status.name})');
+      } catch (e) {
+        print('  ✗ Error parsing booking ${doc.id}: $e');
+      }
+    }
+    print('📦 [VendorService] Successfully parsed ${bookings.length} bookings');
+    return bookings;
   }
 
   Stream<List<BookingModel>> watchVendorBookings(String vendorId) {

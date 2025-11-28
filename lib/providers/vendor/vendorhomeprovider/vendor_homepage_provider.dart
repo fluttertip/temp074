@@ -20,18 +20,26 @@ class VendorHomePageProvider extends ChangeNotifier {
   }
 
   Future<void> init(String vendorId, {bool watch = true}) async {
+    print('🚀 [VendorProvider] Initializing with vendorId: $vendorId');
     _setLoading(true);
     try {
       _bookings = await _service.getVendorBookings(vendorId);
+      print('📋 [VendorProvider] Loaded ${_bookings.length} bookings');
       notifyListeners();
 
       if (watch) {
         _sub?.cancel();
         _sub = _service.watchVendorBookings(vendorId).listen((list) {
+          print('👀 [VendorProvider] Stream update: ${list.length} bookings');
           _bookings = list;
           notifyListeners();
+        }, onError: (e) {
+          print('❌ [VendorProvider] Stream error: $e');
         });
       }
+    } catch (e) {
+      print('❌ [VendorProvider] Error during init: $e');
+      _bookings = [];
     } finally {
       _setLoading(false);
     }

@@ -4,6 +4,7 @@ import 'package:homeservice/providers/auth/user_provider.dart';
 import 'package:homeservice/providers/vendor/vendorhomeprovider/vendor_homepage_provider.dart';
 import 'package:homeservice/models/booking_model.dart';
 
+
 class VendorDashboardScreen extends StatefulWidget {
   const VendorDashboardScreen({super.key});
 
@@ -28,6 +29,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
     return ChangeNotifierProvider<VendorHomePageProvider>(
       create: (_) {
         final p = VendorHomePageProvider();
+        print('📱 [Dashboard] Creating provider for vendor: ${cachedUser.uid}');
         p.init(cachedUser.uid);
         return p;
       },
@@ -35,6 +37,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         appBar: AppBar(title: const Text('Vendor Dashboard')),
         body: Consumer<VendorHomePageProvider>(
           builder: (context, vm, _) {
+            print('🎨 [Dashboard] Building with ${vm.bookings.length} bookings, filter: $_filter');
             final bookings = _applyFilter(vm.bookings, _filter);
 
             return vm.loading
@@ -54,10 +57,22 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                           Text('Bookings', style: Theme.of(context).textTheme.titleLarge),
                           const SizedBox(height: 8),
                           if (bookings.isEmpty)
-                            const Center(child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24.0),
-                              child: Text('No bookings found'),
-                            ))
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _filter == 'all' ? 'No bookings yet' : 'No ${_filter} bookings',
+                                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
                           else
                             ListView.separated(
                               shrinkWrap: true,
