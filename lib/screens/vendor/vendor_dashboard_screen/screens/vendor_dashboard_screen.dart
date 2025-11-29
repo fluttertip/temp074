@@ -17,14 +17,28 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final cachedUser = userProvider.getCachedUser();
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, _) {
+        final cachedUser = userProvider.getCachedUser();
+        print('🔐 [Dashboard] UserProvider check:');
+        print('   isAuthenticated: ${userProvider.isAuthenticated}');
+        print('   activeRole: ${userProvider.activeRole}');
+        print('   cachedUser: ${cachedUser?.uid} / ${cachedUser?.name}');
 
-    if (cachedUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('No vendor signed in')),
-      );
-    }
+        if (cachedUser == null) {
+          print('❌ [Dashboard] No cached user available!');
+          return const Scaffold(
+            body: Center(child: Text('No vendor signed in')),
+          );
+        }
+
+        print('✅ [Dashboard] Using vendor ID: ${cachedUser.uid}');
+        return _buildDashboard(context, cachedUser);
+      },
+    );
+  }
+
+  Widget _buildDashboard(BuildContext context, dynamic cachedUser) {
 
     return ChangeNotifierProvider<VendorHomePageProvider>(
       create: (_) {
@@ -34,15 +48,28 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         return p;
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Vendor Dashboard')),
         body: Consumer<VendorHomePageProvider>(
           builder: (context, vm, _) {
-            print('🎨 [Dashboard] Building with ${vm.bookings.length} bookings, filter: $_filter');
+            print('🎨 [Dashboard] Consumer rebuild:');
+            print('   Bookings: ${vm.bookings.length}');
+            print('   Loading: ${vm.loading}');
+            print('   Filter: $_filter');
             final bookings = _applyFilter(vm.bookings, _filter);
 
-            return vm.loading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
+            if (vm.loading) {
+              return const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Loading bookings...'),
+                  ],
+                ),
+              );
+            }
+
+            return RefreshIndicator(
                     onRefresh: () async => vm.refresh(cachedUser.uid),
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -50,12 +77,132 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // VENDOR PROFILE HEADER
+                          Consumer<UserProvider>(
+                            builder: (context, userProvider, _) {
+                              final vendor = userProvider.getCachedUser();
+                              return Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 32,
+                                        backgroundImage: vendor?.profilePhotoUrl != null
+                                            ? NetworkImage(vendor!.profilePhotoUrl!)
+                                            : null,
+                                        backgroundColor: Colors.grey[300],
+                                        child: vendor?.profilePhotoUrl == null
+                                            ? Icon(Icons.person, size: 32, color: Colors.grey[600])
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              vendor?.name ?? 'Vendor',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              vendor?.email ?? '',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.black54,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green[100],
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                vendor?.isprofilecompletevendor == true ? 'Profile Complete' : 'Incomplete Profile',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.green[800],
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          // DEBUG INFO uncomment to debug
+                          // Container(
+                          //   padding: const EdgeInsets.all(8),
+                          //   decoration: BoxDecoration(
+                          //     color: Colors.blue[50],
+                          //     border: Border.all(color: Colors.blue),
+                          //     borderRadius: BorderRadius.circular(4),
+                          //   ),
+                          //   child: Column(
+                          //     crossAxisAlignment: CrossAxisAlignment.start,
+                          //     children: [
+                          //       Text(
+                          //         'Vendor UID: ${cachedUser.uid}',
+                          //         style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                          //       ),
+                          //       Text(
+                          //         'Bookings: ${vm.bookings.length} loaded, ${bookings.length} after filter',
+                          //         style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                          //       ),
+                          //       Text(
+                          //         'Counts: ${vm.counts}',
+                          //         style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
+                          const SizedBox(height: 16),
                           _buildStatsRow(vm),
                           const SizedBox(height: 12),
                           _buildFilterChips(),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Text(
+                                'Bookings',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.indigo[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${bookings.length}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo[800],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
-                          Text('Bookings', style: Theme.of(context).textTheme.titleLarge),
-                          const SizedBox(height: 8),
                           if (bookings.isEmpty)
                             Center(
                               child: Padding(
@@ -66,7 +213,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                     Icon(Icons.inbox, size: 48, color: Colors.grey[400]),
                                     const SizedBox(height: 12),
                                     Text(
-                                      _filter == 'all' ? 'No bookings yet' : 'No ${_filter} bookings',
+                                      _filter == 'all' ? 'No bookings yet' : 'No $_filter bookings',
                                       style: TextStyle(color: Colors.grey[600], fontSize: 16),
                                     ),
                                   ],
@@ -105,33 +252,141 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   }
 
   Widget _buildStatsRow(VendorHomePageProvider vm) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _statCard('Completed', vm.completedCount.toString(), Icons.check_circle, Colors.green)),
-        const SizedBox(width: 8),
-        Expanded(child: _statCard('Earnings', '₹${vm.totalEarnings.toStringAsFixed(0)}', Icons.attach_money, Colors.indigo)),
-        const SizedBox(width: 8),
-        Expanded(child: _statCard('Services', vm.totalServicesOffered.toString(), Icons.build, Colors.orange)),
+        // Full-width Earnings Card
+        Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [Colors.indigo[700]!, Colors.indigo[500]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.attach_money, color: Colors.white, size: 32),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Total Earnings',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₹${vm.totalEarnings.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Completed & Services Row
+        Row(
+          children: [
+            Expanded(
+              child: _miniStatCard(
+                'Completed',
+                vm.completedCount.toString(),
+                Icons.check_circle,
+                Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _miniStatCard(
+                'Services',
+                vm.totalServicesOffered.toString(),
+                Icons.build,
+                Colors.orange,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Additional Stats Row
+        Row(
+          children: [
+            Expanded(
+              child: _miniStatCard(
+                'Total Bookings',
+                vm.bookings.length.toString(),
+                Icons.bookmark,
+                Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _miniStatCard(
+                'Pending',
+                (vm.counts[BookingStatus.pending] ?? 0).toString(),
+                Icons.schedule,
+                Colors.amber,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _statCard(String title, String value, IconData icon, Color color) {
+  Widget _miniStatCard(String title, String value, IconData icon, Color color) {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(backgroundColor: color.withOpacity(0.15), child: Icon(icon, color: color)),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Text(title, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                const SizedBox(height: 6),
-                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                CircleAvatar(
+                  backgroundColor: color.withOpacity(0.15),
+                  child: Icon(icon, color: color, size: 18),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
-            )
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
@@ -140,21 +395,49 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
 
   Widget _buildFilterChips() {
     final chips = <String>['all'] + BookingStatus.values.map((e) => e.name).toList();
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: chips.map((c) {
-          final selected = _filter == c;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(c == 'all' ? 'All' : _prettyStatus(c)),
-              selected: selected,
-              onSelected: (_) => setState(() => _filter = c),
-            ),
-          );
-        }).toList(),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Filter by Status',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: chips.map((c) {
+              final selected = _filter == c;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: FilterChip(
+                  label: Text(
+                    c == 'all' ? 'All' : _prettyStatus(c),
+                    style: TextStyle(
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                  ),
+                  selected: selected,
+                  onSelected: (_) => setState(() => _filter = c),
+                  backgroundColor: Colors.grey[100],
+                  selectedColor: _getStatusColor(c == 'all' ? BookingStatus.pending : BookingStatus.values.firstWhere((s) => s.name == c)).withOpacity(0.2),
+                  side: BorderSide(
+                    color: selected
+                        ? _getStatusColor(c == 'all' ? BookingStatus.pending : BookingStatus.values.firstWhere((s) => s.name == c))
+                        : Colors.grey[300]!,
+                    width: selected ? 2 : 1,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -165,24 +448,147 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   Widget _buildBookingCard(BuildContext context, VendorHomePageProvider vm, BookingModel b) {
     final scheduled = b.scheduledDateTime.toLocal();
     final scheduledText = '${scheduled.day}/${scheduled.month}/${scheduled.year} ${scheduled.hour.toString().padLeft(2, '0')}:${scheduled.minute.toString().padLeft(2, '0')}';
+    
+    final statusColor = _getStatusColor(b.status);
+    final statusBgColor = _getStatusBgColor(b.status);
 
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(14.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Row
             Row(
               children: [
-                Expanded(child: Text(b.serviceDetails.title, style: const TextStyle(fontWeight: FontWeight.bold))),
-                Chip(label: Text(b.status.name)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        b.serviceDetails.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'ID: ${b.id.substring(0, 8)}...',
+                        style: const TextStyle(fontSize: 10, color: Colors.black38),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    b.status.name.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Service Details
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    b.serviceDetails.address,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            Text('Customer: ${b.customerContact.name}'),
-            const SizedBox(height: 4),
-            Text('When: $scheduledText'),
+            // Customer & Schedule
+            Row(
+              children: [
+                Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Customer: ${b.customerContact.name}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    scheduledText,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Pricing
+            Row(
+              children: [
+                Icon(Icons.attach_money, size: 16, color: Colors.green[600]),
+                const SizedBox(width: 6),
+                Text(
+                  '₹${b.pricing.finalPrice.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green[700],
+                  ),
+                ),
+                const Spacer(),
+                if (b.isPaymentCompleted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green[100],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'Paid',
+                      style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.w600),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[100],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'Unpaid',
+                      style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Action Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: _actionButtonsForStatus(context, vm, b),
@@ -191,6 +597,38 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.pending:
+        return Colors.blue;
+      case BookingStatus.confirmed:
+        return Colors.purple;
+      case BookingStatus.inProgress:
+        return Colors.orange;
+      case BookingStatus.completed:
+        return Colors.green;
+      case BookingStatus.cancelled:
+      case BookingStatus.rejected:
+        return Colors.red;
+    }
+  }
+
+  Color _getStatusBgColor(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.pending:
+        return Colors.blue[100]!;
+      case BookingStatus.confirmed:
+        return Colors.purple[100]!;
+      case BookingStatus.inProgress:
+        return Colors.orange[100]!;
+      case BookingStatus.completed:
+        return Colors.green[100]!;
+      case BookingStatus.cancelled:
+      case BookingStatus.rejected:
+        return Colors.red[100]!;
+    }
   }
 
   List<Widget> _actionButtonsForStatus(BuildContext context, VendorHomePageProvider vm, BookingModel b) {

@@ -8,25 +8,36 @@ class VendorHomePageServices {
 
   Future<List<BookingModel>> getVendorBookings(String vendorId) async {
     print('🔄 [VendorService] Fetching bookings for vendorId: $vendorId');
-    final qs = await _firestore
-        .collection('bookings')
-        .where('vendorId', isEqualTo: vendorId)
-        .orderBy('createdAt', descending: true)
-        .get();
+    try {
+      final qs = await _firestore
+          .collection('bookings')
+          .where('vendorId', isEqualTo: vendorId)
+          .orderBy('createdAt', descending: true)
+          .get();
 
-    print('✅ [VendorService] Query returned ${qs.docs.length} bookings');
-    final bookings = <BookingModel>[];
-    for (var doc in qs.docs) {
-      try {
-        final b = BookingModel.fromFirestore(doc);
-        bookings.add(b);
-        print('  ✓ Parsed booking: ${doc.id} - ${b.serviceDetails.title} (${b.status.name})');
-      } catch (e) {
-        print('  ✗ Error parsing booking ${doc.id}: $e');
+      print('✅ [VendorService] Query returned ${qs.docs.length} bookings');
+      final bookings = <BookingModel>[];
+      for (var doc in qs.docs) {
+        try {
+          final data = doc.data();
+          print('  📄 Doc ${doc.id} raw data keys: ${data.keys.toList()}');
+          print('  📄 Status value: ${data['status']} (type: ${data['status'].runtimeType})');
+          
+          final b = BookingModel.fromFirestore(doc);
+          bookings.add(b);
+          print('  ✓ Parsed booking: ${doc.id} - ${b.serviceDetails.title} (${b.status.name})');
+        } catch (e, st) {
+          print('  ✗ Error parsing booking ${doc.id}: $e');
+          print('  Stack: $st');
+        }
       }
+      print('📦 [VendorService] Successfully parsed ${bookings.length} bookings');
+      return bookings;
+    } catch (e, st) {
+      print('❌ [VendorService] Error fetching bookings: $e');
+      print('Stack: $st');
+      return [];
     }
-    print('📦 [VendorService] Successfully parsed ${bookings.length} bookings');
-    return bookings;
   }
 
   Stream<List<BookingModel>> watchVendorBookings(String vendorId) {
@@ -35,7 +46,27 @@ class VendorHomePageServices {
         .where('vendorId', isEqualTo: vendorId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map((d) => BookingModel.fromFirestore(d)).toList());
+        .handleError((e) {
+          print('❌ [VendorService] Stream error: $e');
+          return <QuerySnapshot>[];
+        })
+        .map((snap) {
+          try {
+            final bookings = snap.docs.map((d) {
+              try {
+                return BookingModel.fromFirestore(d);
+              } catch (e) {
+                print('  ✗ Error parsing stream booking ${d.id}: $e');
+                rethrow;
+              }
+            }).toList();
+            print('👀 [VendorService] Stream mapped ${bookings.length} bookings');
+            return bookings;
+          } catch (e) {
+            print('❌ [VendorService] Error mapping stream: $e');
+            return [];
+          }
+        });
   }
 
   Future<List<BookingModel>> getBookingsByStatus(String vendorId, BookingStatus status) async {
