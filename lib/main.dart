@@ -117,10 +117,10 @@ class NepFixApp extends StatelessWidget {
                       // LEFT: message
                       Expanded(
                         child: Center(
-                          child: Text("zoom out to 67% for better view",
+                          child: Text("zoom out browser to 67% for better view",
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 16,
                               color: Colors.white.withOpacity(0.7),
                               fontWeight: FontWeight.bold,
                             ),
@@ -136,8 +136,20 @@ class NepFixApp extends StatelessWidget {
                         ),
                       ),
 
-                      // RIGHT EMPTY SPACE (optional info)
-                      const Expanded(child: SizedBox()),
+                      // RIGHT: Made by text
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            "Made by Niranjan Dahal",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white.withOpacity(0.6),
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
